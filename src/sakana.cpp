@@ -1,9 +1,11 @@
+// https://www.gingerbill.org/article/2015/08/19/defer-in-cpp
+
 #pragma once
 
 template <typename F> struct privDefer {
-    F f;
-    privDefer(F f) : f(f) {}
-    ~privDefer() { f(); }
+  F f;
+  privDefer(F f) : f(f) {}
+  ~privDefer() { f(); }
 };
 
 template <typename F> privDefer<F> defer_func(F f) { return privDefer<F>(f); }
