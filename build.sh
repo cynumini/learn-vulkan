@@ -6,6 +6,6 @@ mkdir -p out
 
 clang-format -i src/*
 
-g++ ./src/main.cpp -lglfw -o out/learn-vulkan
+g++ ./src/main.cpp -lglfw -lvulkan -o out/learn-vulkan
 
 ./out/learn-vulkan
