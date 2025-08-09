@@ -59,3 +59,5 @@ pub fn init() void {
 pub const deinit = c.glfwTerminate;
 /// Processes all pending events.
 pub const pollEvents = c.glfwPollEvents;
+/// Returns the Vulkan instance extensions required by GLFW.
+pub const getRequiredInstanceExtensions = c.glfwGetRequiredInstanceExtensions;
