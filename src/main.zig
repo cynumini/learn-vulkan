@@ -5,7 +5,11 @@ const math = @import("math.zig");
 const vk = @import("vulkan.zig");
 
 pub fn main() !void {
-    var app: HelloTriangleApplication = .{};
+    var da: std.heap.DebugAllocator(.{}) = .init;
+    defer _ = da.deinit();
+    const allocator = da.allocator();
+
+    var app: HelloTriangleApplication = .{.allocator = allocator};
 
     try app.run();
 }
