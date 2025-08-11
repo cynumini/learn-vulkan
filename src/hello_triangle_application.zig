@@ -65,14 +65,13 @@ fn createInstance(self: *Self) !void {
         return error.ValidationLayersNotAvailable;
     }
 
-    const app_info = vk.ApplicationInfo{
-        .sType = vk.structure_type_application_info,
-        .pApplicationName = "Hello Triangle",
-        .applicationVersion = vk.makeVersion(1, 0, 0),
-        .pEngineName = "No Engine",
-        .engineVersion = vk.makeVersion(1, 0, 0),
-        .apiVersion = vk.api_version_1_0,
-    };
+    const app_info = vk.ApplicationInfo.init(.{
+        .name = "Hello Triangle",
+        .version = .{ .major = 1 },
+        .engine_name = "No Engine",
+        .engine_version = .{ .major = 1 },
+        .api_version = .@"1.0",
+    });
 
     var extensions = try self.getRequiredExtensions();
     defer extensions.deinit();

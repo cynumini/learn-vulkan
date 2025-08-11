@@ -1,10 +1,12 @@
 const c = @import("glfw.zig").c;
+const std = @import("std");
 /// Returns up to requested number of global extension properties
 pub const enumerateInstanceExtensionProperties = c.vkEnumerateInstanceExtensionProperties;
 /// Construct an API version number
 pub const makeVersion = c.VK_MAKE_VERSION;
 /// Create a new Vulkan instance
-pub const createInstance = c.vkCreateInstance;
+pub extern fn vkCreateInstance(pCreateInfo: [*c]const InstanceCreateInfo, pAllocator: [*c]const c.VkAllocationCallbacks, pInstance: [*c]c.VkInstance) c.VkResult;
+pub const createInstance = vkCreateInstance;
 /// Destroy an instance of Vulkan
 pub const destroyInstance = c.vkDestroyInstance;
 /// Returns up to requested number of global layer properties
@@ -27,10 +29,6 @@ pub const Bool32 = c.VkBool32;
 pub const LayerProperties = c.VkLayerProperties;
 /// Return API version number for Vulkan 1.0
 pub const api_version_1_0 = c.VK_API_VERSION_1_0;
-/// Structure specifying application information
-pub const ApplicationInfo = c.VkApplicationInfo;
-/// Structure specifying parameters of a newly created instance
-pub const InstanceCreateInfo = c.VkInstanceCreateInfo;
 /// Command successfully completed
 pub const success = c.VK_SUCCESS;
 /// instance extension
@@ -61,3 +59,73 @@ pub fn destroyDebugUtilsMessengerEXT(instance: Instance, debugMessenger: DebugUt
 }
 /// Opaque handle to a debug messenger object
 pub const DebugUtilsMessengerEXT = c.VkDebugUtilsMessengerEXT;
+
+/// VkInstanceCreateInfo - Structure specifying parameters of a newly created instance
+pub const InstanceCreateInfo = extern struct {
+    sType: c.VkStructureType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+    pNext: ?*const anyopaque,
+    flags: c.VkInstanceCreateFlags = @import("std").mem.zeroes(c.VkInstanceCreateFlags),
+    pApplicationInfo: [*c]const ApplicationInfo = @import("std").mem.zeroes([*c]const ApplicationInfo),
+    enabledLayerCount: u32 = @import("std").mem.zeroes(u32),
+    ppEnabledLayerNames: [*c]const [*c]const u8 = @import("std").mem.zeroes([*c]const [*c]const u8),
+    enabledExtensionCount: u32 = @import("std").mem.zeroes(u32),
+    ppEnabledExtensionNames: [*c]const [*c]const u8 = @import("std").mem.zeroes([*c]const [*c]const u8),
+
+    pub fn init(options: struct {
+        next: ?*const anyopaque = null,
+    }) InstanceCreateInfo {
+        return .{
+            .pNext = options.next,
+        };
+    }
+};
+
+pub const VersionBits = packed struct {
+    patch: u12 = 0,
+    minor: u10 = 0,
+    major: u10 = 0,
+};
+
+pub const ApiVersionBits = packed struct {
+    patch: u12 = 0,
+    minor: u10 = 0,
+    major: u7 = 0,
+    variant: u3 = 0,
+};
+
+pub const ApiVersion = enum(u32) {
+    @"1.0" = @bitCast(ApiVersionBits{ .major = 1, .minor = 0 }),
+    @"1.1" = @bitCast(ApiVersionBits{ .major = 1, .minor = 1 }),
+    @"1.2" = @bitCast(ApiVersionBits{ .major = 1, .minor = 2 }),
+    @"1.3" = @bitCast(ApiVersionBits{ .major = 1, .minor = 3 }),
+    @"1.4" = @bitCast(ApiVersionBits{ .major = 1, .minor = 4 }),
+};
+
+/// VkApplicationInfo - Structure specifying application information
+pub const ApplicationInfo = extern struct {
+    sType: c.VkStructureType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
+    pNext: ?*const anyopaque,
+    pApplicationName: [*c]const u8,
+    applicationVersion: u32,
+    pEngineName: [*c]const u8,
+    engineVersion: u32,
+    apiVersion: u32,
+
+    pub fn init(options: struct {
+        next: ?*const anyopaque = null,
+        name: ?[]const u8 = null,
+        version: VersionBits = .{},
+        engine_name: ?[]const u8 = null,
+        engine_version: VersionBits = .{},
+        api_version: ApiVersion = .@"1.0",
+    }) ApplicationInfo {
+        return .{
+            .pNext = options.next,
+            .pApplicationName = if (options.name) |name| name.ptr else std.mem.zeroes([*c]const u8),
+            .applicationVersion = @bitCast(options.version),
+            .pEngineName = if (options.engine_name) |name| name.ptr else std.mem.zeroes([*c]const u8),
+            .engineVersion = @bitCast(options.engine_version),
+            .apiVersion = @intFromEnum(options.api_version),
+        };
+    }
+};
