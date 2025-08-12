@@ -60,22 +60,53 @@ pub fn destroyDebugUtilsMessengerEXT(instance: Instance, debugMessenger: DebugUt
 /// Opaque handle to a debug messenger object
 pub const DebugUtilsMessengerEXT = c.VkDebugUtilsMessengerEXT;
 
+/// Bitmask specifying behavior of the instance
+const InstanceCreateFlagBits = packed struct {
+    numerate_portability_bit_khr: bool = false,
+    reserved: u31 = 0,
+};
+
 /// VkInstanceCreateInfo - Structure specifying parameters of a newly created instance
 pub const InstanceCreateInfo = extern struct {
     sType: c.VkStructureType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
     pNext: ?*const anyopaque,
     flags: c.VkInstanceCreateFlags = @import("std").mem.zeroes(c.VkInstanceCreateFlags),
-    pApplicationInfo: [*c]const ApplicationInfo = @import("std").mem.zeroes([*c]const ApplicationInfo),
-    enabledLayerCount: u32 = @import("std").mem.zeroes(u32),
-    ppEnabledLayerNames: [*c]const [*c]const u8 = @import("std").mem.zeroes([*c]const [*c]const u8),
-    enabledExtensionCount: u32 = @import("std").mem.zeroes(u32),
-    ppEnabledExtensionNames: [*c]const [*c]const u8 = @import("std").mem.zeroes([*c]const [*c]const u8),
+    pApplicationInfo: [*c]const ApplicationInfo,
+    enabledLayerCount: u32,
+    ppEnabledLayerNames: [*c]const [*c]const u8,
+    enabledExtensionCount: u32,
+    ppEnabledExtensionNames: [*c]const [*c]const u8,
 
-    pub fn init(options: struct {
+    pub fn init(allocator: std.mem.Allocator, options: struct {
         next: ?*const anyopaque = null,
-    }) InstanceCreateInfo {
+        flags: InstanceCreateFlagBits = .{},
+        application_info: ?*const ApplicationInfo = null,
+        enabled_layers: ?[]const []const u8 = null,
+        enabled_extensions: ?[]const []const u8 = null,
+    }) !InstanceCreateInfo {
+        var enabled_layers: std.ArrayList([*c]const u8) = .init(allocator);
+        // defer enabled_layers.deinit();
+        if (options.enabled_layers) |options_enabled_layers| {
+            for (options_enabled_layers) |enabled_layer| {
+                try enabled_layers.append(try allocator.dupeZ(u8, enabled_layer));
+            }
+        }
+        var enabled_extensions: std.ArrayList([*c]const u8) = .init(allocator);
+        // defer enabled_extensions.deinit();
+        if (options.enabled_extensions) |options_enabled_extensions| {
+            for (options_enabled_extensions) |enabled_extension| {
+                try enabled_extensions.append(try allocator.dupeZ(u8, enabled_extension));
+            }
+        }
+        // std.debug.print("{any} {any}\n", .{ enabled_layers.items[0], enabled_layers.items[0][27]});
         return .{
             .pNext = options.next,
+            .flags = @bitCast(options.flags),
+            .pApplicationInfo = if (options.application_info) |application_info| application_info else null,
+            .enabledLayerCount = @intCast(enabled_layers.items.len),
+            .ppEnabledLayerNames = @ptrCast(try enabled_layers.toOwnedSlice()),
+            .enabledExtensionCount = @intCast(enabled_extensions.items.len),
+            .ppEnabledExtensionNames = @ptrCast(try enabled_extensions.toOwnedSlice()),
         };
     }
 };

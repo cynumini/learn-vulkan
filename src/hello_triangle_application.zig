@@ -9,7 +9,7 @@ const Self = @This();
 const width = 800;
 const height = 600;
 
-const validation_layers = [_][*c]const u8{
+const validation_layers = [_][]const u8{
     "VK_LAYER_KHRONOS_validation",
 };
 const enable_validation_layers = builtin.mode == .Debug;
@@ -76,14 +76,20 @@ fn createInstance(self: *Self) !void {
     var extensions = try self.getRequiredExtensions();
     defer extensions.deinit();
 
-    var create_info = vk.InstanceCreateInfo{
-        .sType = vk.structure_type_instance_create_info,
-        .pApplicationInfo = &app_info,
-        .enabledExtensionCount = @intCast(extensions.items.len),
-        .ppEnabledExtensionNames = @ptrCast(extensions.items),
-        .enabledLayerCount = if (enable_validation_layers) validation_layers.len else 0,
-        .ppEnabledLayerNames = &validation_layers,
-    };
+    // var create_info = vk.InstanceCreateInfo{
+    //     .sType = vk.structure_type_instance_create_info,
+    //     .pApplicationInfo = &app_info,
+    //     .enabledExtensionCount = @intCast(extensions.items.len),
+    //     .ppEnabledExtensionNames = @ptrCast(extensions.items),
+    //     .enabledLayerCount = if (enable_validation_layers) validation_layers.len else 0,
+    //     .ppEnabledLayerNames = &validation_layers,
+    // };
+    var create_info = try vk.InstanceCreateInfo.init(self.allocator, .{
+        .application_info = &app_info,
+        .enabled_layers = if (enable_validation_layers) &validation_layers else null,
+        .enabled_extensions = extensions.items,
+    });
+    std.debug.print("{any}\n", .{create_info.ppEnabledExtensionNames[0..2]});
 
     const debugCreateInfo = getDebugMessengerCreateInfo();
     if (enable_validation_layers) {
@@ -91,6 +97,8 @@ fn createInstance(self: *Self) !void {
     } else {
         create_info.pNext = null;
     }
+
+    std.debug.print("{any}\n", .{create_info});
 
     if (vk.createInstance(&create_info, null, &self.instance) != vk.success) {
         return error.FailedToCreateInstance;
@@ -122,12 +130,14 @@ fn setupDebugMessenger(self: *Self) !void {
 }
 
 /// Deinitialize with `deinit` or use `toOwnedSlice`.
-fn getRequiredExtensions(self: *Self) !std.ArrayList([*c]const u8) {
+fn getRequiredExtensions(self: *Self) !std.ArrayList([]const u8) {
     var glfw_extension_count: u32 = 0;
     const glfw_extensions = glfw.getRequiredInstanceExtensions(&glfw_extension_count);
 
-    var extensions: std.ArrayList([*c]const u8) = .init(self.allocator);
-    try extensions.appendSlice(glfw_extensions[0..glfw_extension_count]);
+    var extensions: std.ArrayList([]const u8) = .init(self.allocator);
+    for (glfw_extensions[0..glfw_extension_count]) |extension| {
+        try extensions.append(std.mem.span(extension));
+    }
 
     if (enable_validation_layers) {
         try extensions.append(vk.ext_debug_utils_extension_name);
@@ -150,7 +160,7 @@ fn checkValidationLayerSupport(self: *Self) !bool {
 
         for (available_layers) |layer_properties| {
             const name: [*c]const u8 = &layer_properties.layerName;
-            if (std.mem.eql(u8, std.mem.span(layer_name), std.mem.span(name))) {
+            if (std.mem.eql(u8, layer_name, std.mem.span(name))) {
                 layer_found = true;
                 break;
             }
