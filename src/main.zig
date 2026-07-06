@@ -1,28 +1,34 @@
 const std = @import("std");
-const c = @import("c");
-
-pub extern fn lv_glm_test() void;
+const vk = @import("vulkan.zig");
+const glfw = @import("glfw.zig");
+const m = @import("m.zig");
 
 pub fn main(init: std.process.Init) !void {
     _ = init;
 
-    _ = c.glfwInit();
-    defer c.glfwTerminate();
+    _ = glfw.init();
+    defer glfw.terminate();
 
-    c.glfwWindowHint(c.GLFW_CLIENT_API, c.GLFW_NO_API);
+    glfw.windowHint(.client_api, .no_api);
 
-    const window = c.glfwCreateWindow(800, 600, "Vulkan window", null, null).?;
-    defer window.glfwDestroyWindow();
+    const window = glfw.createWindow(800, 600, "Vulkan window", null, null).?;
+    defer window.destroy();
 
     var extensionCount: u32 = 0;
-    _ = c.vkEnumerateInstanceExtensionProperties(null, &extensionCount, null);
+    _ = vk.enumerateInstanceExtensionProperties(null, &extensionCount, null);
 
     std.debug.print("{} extensions supported\n", .{extensionCount});
 
-    lv_glm_test();
+    const matrix: m.Mat4 = undefined;
+    const vec: m.Vec4 = undefined;
+    const @"test" = matrix.mulVec4(vec);
+    _ = @"test";
 
-    while(window.glfwWindowShouldClose() == 0) {
-        c.glfwPollEvents();
+    while (!window.shouldClose()) {
+        glfw.pollEvents();
     }
+}
 
+test {
+    std.testing.refAllDecls(@This());
 }
