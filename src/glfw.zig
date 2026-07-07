@@ -2,14 +2,17 @@ extern fn glfwInit() c_int;
 pub const init = glfwInit;
 extern fn glfwTerminate() void;
 pub const terminate = glfwTerminate;
-const WindowHint = enum(c_int) {
-    client_api = 0x00022001,
+extern fn glfwWindowHint(hint: c_int, value: c_int) void;
+const WindowHints = struct {
+    resizable: ?bool,
+    client_api: ?enum(c_int) {
+        no_api = 0,
+    },
 };
-const WindowHintValue = enum(c_int) {
-    no_api = 0,
-};
-extern fn glfwWindowHint(hint: WindowHint, value: WindowHintValue) void;
-pub const windowHint = glfwWindowHint;
+pub fn windowHints(window_hints: WindowHints) void {
+    if (window_hints.resizable) |resizable| glfwWindowHint(0x00020003, @intFromBool(resizable));
+    if (window_hints.client_api) |client_api| glfwWindowHint(0x00022001, @intFromEnum(client_api));
+}
 pub const Monitor = opaque {};
 pub const Window = opaque {
     extern fn glfwWindowShouldClose(window: *Window) bool;
